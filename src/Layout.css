@@ -1,12 +1,14 @@
-/* --- Estilos del Layout Principal --- */
-.app-layout {
+.app-layout-horizontal {
   display: flex;
+  flex-direction: column;
   background-color: var(--color-fondo);
   min-height: 100vh;
 }
 
 .main-content {
-  flex: 1; 
+  flex: 1;
   padding: 30px;
-  overflow-y: auto; /* Permite scroll solo en esta área */
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
 }

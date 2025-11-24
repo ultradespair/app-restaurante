@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import BoletaModal from '../components/BoletaModal';
+import React, { useState, useMemo } from 'react';
 import QuantityInput from '../components/QuantityInput';
-import ProductModal from '../components/ProductModal';
+import HeroSlider from '../components/HeroSlider';
 
 const menuData = [
   { id: 1, name: 'Lomo Saltado', price: 35.00, img: '/images/lomo-saltado.jpg', category: 'Platos de Fondo' },
@@ -22,123 +21,23 @@ const menuData = [
 
 const categories = ['Todos', 'Platos de Fondo', 'Entradas', 'Bebidas'];
 
-const getInitialPedido = () => {
-  const savedPedido = localStorage.getItem('miPedidoRestaurante');
-  if (!savedPedido) {
-    return [];
-  }
+function MenuPage({ 
+  pedido, 
+  totalCuenta, 
+  handleProductClick, 
+  handleIncreaseQuantity, 
+  handleDecreaseQuantity, 
+  handleConfirmarPedido 
+}) {
   
-  let parsedPedido = [];
-  try {
-    parsedPedido = JSON.parse(savedPedido);
-  } catch (e) {
-    return [];
-  }
-
-  if (parsedPedido.length === 0) {
-    return [];
-  }
-
-  if (parsedPedido[0].uniqueId === undefined || parsedPedido[0].quantity === undefined) {
-    const itemsAgrupados = {};
-    parsedPedido.forEach(item => {
-      const uniqueId = item.id; 
-      const price = item.price || 0;
-      const name = item.name || 'Producto Desconocido';
-      
-      if (itemsAgrupados[uniqueId]) {
-        itemsAgrupados[uniqueId].quantity += 1;
-      } else {
-        itemsAgrupados[uniqueId] = {
-          ...item,
-          price: price,
-          quantity: 1,
-          uniqueId: uniqueId,
-          variantName: item.variantName || null,
-        };
-      }
-    });
-    
-    const nuevoPedidoMigrado = Object.values(itemsAgrupados);
-    localStorage.setItem('miPedidoRestaurante', JSON.stringify(nuevoPedidoMigrado));
-    return nuevoPedidoMigrado;
-  }
-  
-  return parsedPedido;
-};
-
-function MenuPage() {
-  const [pedido, setPedido] = useState(getInitialPedido());
   const [numPersonas, setNumPersonas] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [confirmedOrder, setConfirmedOrder] = useState(null);
   const [categoriaActual, setCategoriaActual] = useState('Todos');
-  const [productModal, setProductModal] = useState(null);
-
-  useEffect(() => {
-    if (pedido) {
-      localStorage.setItem('miPedidoRestaurante', JSON.stringify(pedido));
-    }
-  }, [pedido]);
-
-  const handleProductClick = (item) => {
-    if (item.variants && item.variants.length > 0) {
-      setProductModal(item);
-    } else {
-      addItemToCart(item);
-    }
-  };
-
-  const addItemToCart = (item, variant = null) => {
-    const uniqueId = variant ? `${item.id}-${variant.name}` : item.id;
-    const price = variant ? variant.price : item.price;
-    const variantName = variant ? variant.name : null;
-    
-    const existingItem = pedido.find(p => p.uniqueId === uniqueId);
-
-    if (existingItem) {
-      const nuevoPedido = pedido.map(p =>
-        p.uniqueId === uniqueId ? { ...p, quantity: p.quantity + 1 } : p
-      );
-      setPedido(nuevoPedido);
-    } else {
-      const newItem = {
-        ...item,
-        price: price,
-        variantName: variantName,
-        quantity: 1,
-        uniqueId: uniqueId,
-      };
-      delete newItem.variants; 
-      setPedido([...pedido, newItem]);
-    }
-  };
-
-  const handleIncreaseQuantity = (uniqueId) => {
-    const nuevoPedido = pedido.map(p =>
-      p.uniqueId === uniqueId ? { ...p, quantity: p.quantity + 1 } : p
-    );
-    setPedido(nuevoPedido);
-  };
-
-  const handleDecreaseQuantity = (uniqueId) => {
-    let nuevoPedido = pedido.map(p =>
-      p.uniqueId === uniqueId ? { ...p, quantity: p.quantity - 1 } : p
-    );
-    nuevoPedido = nuevoPedido.filter(p => p.quantity > 0);
-    setPedido(nuevoPedido);
-  };
 
   const handleInputPersonas = (e) => {
     let valor = parseInt(e.target.value, 10);
     if (valor < 1 || isNaN(valor)) { valor = 1; }
     setNumPersonas(valor);
   };
-
-  const totalCuenta = useMemo(() => {
-    if (!pedido) return 0;
-    return pedido.reduce((total, item) => total + (item.price * item.quantity), 0);
-  }, [pedido]);
 
   const totalPorPersona = useMemo(() => {
     if (totalCuenta === 0 || numPersonas === 0) return 0;
@@ -152,28 +51,10 @@ function MenuPage() {
     return menuData.filter(item => item.category === categoriaActual);
   }, [categoriaActual]);
 
-  const handleConfirmarPedido = () => {
-    if (!pedido || pedido.length === 0) {
-      alert("Tu carrito está vacío.");
-      return;
-    }
-    const finalOrder = {
-      id: 'PAY-' + Date.now(),
-      date: new Date().toISOString(),
-      items: pedido,
-      total: totalCuenta,
-    };
-    const history = JSON.parse(localStorage.getItem('orderHistory')) || [];
-    history.push(finalOrder);
-    localStorage.setItem('orderHistory', JSON.stringify(history));
-    
-    setConfirmedOrder(finalOrder);
-    setIsModalOpen(true);
-    setPedido([]);
-  };
-
   return (
     <>
+      <HeroSlider />
+      
       <div className="main-layout">
         <div className="menu-column">
           <h2>Menú Principal</h2>
@@ -269,20 +150,6 @@ function MenuPage() {
           </div>
         </div>
       </div>
-
-      {isModalOpen && (
-        <BoletaModal 
-          order={confirmedOrder} 
-          onClose={() => setIsModalOpen(false)} 
-        />
-      )}
-      {productModal && (
-        <ProductModal 
-          product={productModal}
-          onClose={() => setProductModal(null)}
-          onAddToCart={addItemToCart}
-        />
-      )}
     </>
   );
 }
