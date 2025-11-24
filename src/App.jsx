@@ -13,6 +13,9 @@ import ProductModal from './components/ProductModal';
 
 import './Layout.css'; 
 
+
+const NUMERO_RESTAURANTE = "51945855510"; 
+
 const getInitialPedido = () => {
   const savedPedido = localStorage.getItem('miPedidoRestaurante');
   if (!savedPedido) return [];
@@ -171,6 +174,7 @@ function App() {
       total: totalCuenta,
       user: user.name
     };
+
     const history = JSON.parse(localStorage.getItem('orderHistory')) || [];
     history.push(finalOrder);
     localStorage.setItem('orderHistory', JSON.stringify(history));
@@ -178,6 +182,25 @@ function App() {
     setConfirmedOrder(finalOrder);
     setIsModalOpen(true);
     setPedido([]);
+
+    let mensaje = `Hola, soy *${user.name}* y quiero realizar el siguiente pedido:\n\n`;
+    mensaje += `🆔 *Pedido ID:* ${finalOrder.id}\n`;
+    mensaje += `📅 *Fecha:* ${new Date().toLocaleDateString()}\n`;
+    mensaje += `-----------------------------------\n`;
+
+    finalOrder.items.forEach((item) => {
+      const quantity = item.quantity || 0;
+      const variant = item.variantName ? `(${item.variantName})` : '';
+      const price = (item.price * quantity).toFixed(2);
+      mensaje += `▪️ *${quantity}x ${item.name} ${variant}* - S/ ${price}\n`;
+    });
+
+    mensaje += `-----------------------------------\n`;
+    mensaje += `💰 *TOTAL A PAGAR: S/ ${finalOrder.total.toFixed(2)}*\n\n`;
+    mensaje += `Espero su confirmación. ¡Gracias!`;
+
+    const mensajeCodificado = encodeURIComponent(mensaje);
+    window.open(`https://wa.me/${NUMERO_RESTAURANTE}?text=${mensajeCodificado}`, '_blank');
   };
 
   return (
